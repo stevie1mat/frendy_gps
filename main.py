@@ -1,6 +1,14 @@
 import streamlit as st
 import pandas as pd
 import json
+import socket
+
+# Function to get local IP address
+def get_local_ip():
+    try:
+        return socket.gethostbyname(socket.gethostname())
+    except Exception:
+        return "Unable to determine IP"
 
 # Store GPS data in memory
 if "gps_data" not in st.session_state:
@@ -33,6 +41,14 @@ def show_gps_data():
     else:
         st.warning("No GPS data received yet.")
 
-# Run both functions
+# Get local IP
+server_ip = get_local_ip()
+
+# Display server details
+st.sidebar.header("📡 Server Details")
+st.sidebar.write(f"**Local Access:** [http://localhost:8501](http://localhost:8501)")
+st.sidebar.write(f"**Network Access:** [http://{server_ip}:8501](http://{server_ip}:8501)")
+
+# Run functions
 receive_gps_data()
 show_gps_data()
