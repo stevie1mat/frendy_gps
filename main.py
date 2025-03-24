@@ -1,41 +1,38 @@
 import streamlit as st
-import requests
 import pandas as pd
+import json
 
-# Replace with your AWS Flask API URL
-API_URL = "http://your-aws-ip:5000/gps/latest"
+# Store GPS data in memory
+if "gps_data" not in st.session_state:
+    st.session_state.gps_data = []
 
-st.title("📍 Real-Time GPS Tracker")
-
-# Fetch GPS Data from API
-def fetch_gps_data():
-    try:
-        response = requests.get(API_URL, timeout=5)
-        if response.status_code == 200:
-            return response.json()
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching GPS data: {e}")
-    return None
+# API Endpoint to Receive Data
+def receive_gps_data():
+    st.subheader("📡 GPS Data Receiver")
+    
+    gps_input = st.text_area("Paste GPS JSON data here:", height=150)
+    
+    if st.button("Submit GPS Data"):
+        try:
+            gps_json = json.loads(gps_input)  # Parse JSON
+            st.session_state.gps_data.append(gps_json)  # Store in memory
+            st.success("✅ GPS data received!")
+        except json.JSONDecodeError:
+            st.error("❌ Invalid JSON format!")
 
 # Display GPS Data
-gps_data = fetch_gps_data()
+def show_gps_data():
+    st.subheader("📍 Live GPS Data")
+    
+    if st.session_state.gps_data:
+        df = pd.DataFrame(st.session_state.gps_data)
+        st.dataframe(df)
 
-if gps_data:
-    st.write("**Latest GPS Data:**")
-    st.json(gps_data)
+        # Show on Map
+        st.map(df.rename(columns={"latitude": "lat", "longitude": "lon"}))
+    else:
+        st.warning("No GPS data received yet.")
 
-    # Convert to DataFrame for visualization
-    df = pd.DataFrame([gps_data])
-
-    # Display table
-    st.write("### Data Table")
-    st.dataframe(df)
-
-    # Show GPS Location on Map
-    st.write("### Location on Map 🌍")
-    st.map(pd.DataFrame({"lat": [gps_data["lat"]], "lon": [gps_data["lng"]]}))
-else:
-    st.warning("No GPS data available")
-
-# Auto-refresh every 5 seconds
-st.button("🔄 Refresh", on_click=lambda: st.experimental_rerun())
+# Run both functions
+receive_gps_data()
+show_gps_data()
